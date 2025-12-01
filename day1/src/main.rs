@@ -15,18 +15,30 @@ fn main() {
         let mut dial = 50;
         let mut count = 0;
         for r in rotations {
-            dial += r;
-            while dial > 99 {
-                dial -= 100;
+            if r > 0 {
+                for _ in 0..r.abs() {
+                    dial += 1;
+                    if dial > 99 {
+                        dial -= 100;
+                    }
+                    if dial == 0 {
+                        count += 1;
+                    }
+                }
             }
-            while dial < 0 {
-                dial += 100;
-            }
-            if dial == 0 {
-                count += 1;
+            if r < 0 {
+                for _ in 0..r.abs() {
+                    dial -= 1;
+                    if dial < 0 {
+                        dial += 100;
+                    }
+                    if dial == 0 {
+                        count += 1;
+                    }
+                }
             }
         }
-        println!("Answer: {}", count);
+        println!("Part2: {}", count);
     } else {
         println!("Please provide 1 argument: Filename");
     }
