@@ -1,6 +1,7 @@
 use std::fs;
 use std::env;
 use std::str::FromStr;
+use prime_factorization::Factorization;
 
 struct Range {
     start: usize,
@@ -24,12 +25,45 @@ impl Range {
         let mut v = vec![];
         for i in self.start..(self.end+1) {
             let s = i.to_string();
-            let l = s.len() / 2;
-            if s.len() == 2 * l && &s[0..l] == &s[l..] {
+            if s.len() < 2 {
+                continue;
+            }
+            if Self::all_same_char(&s) || Self::repeated_patterns(&s) {
                 v.push(i);
             }
         }
         v
+    }
+
+    fn all_same_char(s: &str) -> bool {
+        let c0 = s.chars().next().unwrap();
+        for c in s.chars() {
+            if c != c0 {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn repeated_patterns(s: &str) -> bool {
+        let factorization = Factorization::run(s.len() as u128);
+        for f in factorization.factors {
+            if Self::inner(s, f as usize) {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn inner(s: &str, f: usize) -> bool {
+        let l = s.len() / f;
+        let first = &s[0..l];
+        for i in 1..f {
+            if &s[(i*l)..((i+1) * l)] != first {
+                return false;
+            }
+        }
+        true
     }
 }
 
