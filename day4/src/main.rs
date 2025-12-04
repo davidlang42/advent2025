@@ -78,8 +78,20 @@ fn main() {
         let filename = &args[1];
         let text = fs::read_to_string(&filename)
             .expect(&format!("Error reading from {}", filename));
-        let map: Map = text.parse().unwrap();
-        println!("Answer: {}", map.moveable_rolls().len());
+        let mut map: Map = text.parse().unwrap();
+        let mut removed = 0;
+        while true {
+            let moveable = map.moveable_rolls();
+            if moveable.len() == 0 {
+                break;
+            }
+            println!("Removing {} rolls", moveable.len());
+            removed += moveable.len();
+            for roll in moveable {
+                map.rolls.remove(&roll);                
+            }
+        }
+        println!("Removed: {}", removed);
     } else {
         println!("Please provide 1 argument: Filename");
     }
