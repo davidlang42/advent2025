@@ -1,6 +1,7 @@
 use std::fs;
 use std::env;
 use std::str::FromStr;
+use std::collections::HashSet;
 
 struct Range {
     start: usize,
@@ -46,7 +47,14 @@ fn main() {
                 }
             }
         }
-        println!("Answer: {}", count);
+        println!("Part1: {}", count);
+        let mut set = HashSet::new();
+        for r in &ranges {
+            for i in r.start..(r.end+1) {
+                set.insert(i);
+            }
+        }
+        println!("Part2: {}", set.len());
     } else {
         println!("Please provide 1 argument: Filename");
     }
