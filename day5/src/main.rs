@@ -23,6 +23,10 @@ impl Range {
     fn contains(&self, n: usize) -> bool {
         n >= self.start && n <= self.end
     }
+
+    fn len(&self) -> usize {
+        self.end - self.start + 1
+    }
 }
 
 fn main() {
@@ -35,7 +39,7 @@ fn main() {
         if sections.len() != 2 {
             panic!()
         }
-        let ranges: Vec<Range> = sections[0].lines().map(|s| s.parse().unwrap()).collect();
+        let mut ranges: Vec<Range> = sections[0].lines().map(|s| s.parse().unwrap()).collect();
         let ingredients: Vec<usize> = sections[1].lines().map(|s| s.parse().unwrap()).collect();
         let mut count = 0;
         for i in ingredients {
@@ -46,22 +50,25 @@ fn main() {
                 }
             }
         }
-        println!("Part1: {}", count);
-        count = 0;
-        let max = ranges.iter().map(|r| r.end).max().unwrap();
-        println!("Max: {}", max);
-        for i in 0..(max+1) {
-            for r in &ranges {
-                if r.contains(i) {
-                    count += 1;
-                    break;
-                }
+        println!("Part1: {}", count);        
+        ranges.sort_by(|a, b| a.start.cmp(&b.start));
+        let mut prev_end = 0;
+        for r in &mut ranges {
+            if r.end <= prev_end {
+                r.start = 1;
+                r.end = 0;
+                continue;
             }
-            if i % 1000000000 == 0 {
-                println!("{}", i);
+            if r.start <= prev_end {
+                r.start = prev_end + 1;
             }
+            prev_end = r.end;
         }
-        println!("Part2: {}", count);
+        let mut sum = 0;
+        for r in &ranges {
+            sum += r.len()
+        }
+        println!("Part2: {}", sum);
     } else {
         println!("Please provide 1 argument: Filename");
     }
