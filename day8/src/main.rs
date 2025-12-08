@@ -118,6 +118,10 @@ impl Lights {
         sizes.reverse();
         sizes
     }
+
+    fn all_in_one(&self) -> bool {
+        self.circuits.len() == 1 && self.circuits[0].len() == self.junctions.len()
+    }
 }
 
 fn main() {
@@ -135,6 +139,9 @@ fn main() {
         let sizes = lights.circuit_sizes();
         println!("Circuits: {:?}", sizes);
         println!("Result: {}", sizes[0]*sizes[1]*sizes[2]);
+        while !lights.all_in_one() {
+            last_distance = Some(lights.connect_closest_pair(last_distance));
+        }
     } else {
         println!("Please provide 2 arguments: Filename, Connections");
     }
