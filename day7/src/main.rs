@@ -2,6 +2,7 @@ use std::fs;
 use std::env;
 use std::str::FromStr;
 use std::collections::HashSet;
+use std::collections::HashMap;
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone)]
 struct Pos {
@@ -67,6 +68,36 @@ impl Manifold {
         }
         splits
     }
+
+    fn quantum_simulate(&self) -> usize {
+        let mut beams: HashMap<Pos, usize> = HashMap::new();
+        beams.insert(self.start, 1);
+        while beams.len() > 0 {
+            let mut new_beams = HashMap::new();
+            for (b, count) in &beams {
+                if b.y == self.size.y {
+                    return beams.values().sum();
+                }
+                let new_pos = Pos { x: b.x, y: b.y + 1 };
+                if self.splitters.contains(&new_pos) {
+                    Self::insert_or_increment(&mut new_beams, Pos { x: b.x - 1, y: b.y + 1 }, *count);
+                    Self::insert_or_increment(&mut new_beams, Pos { x: b.x + 1, y: b.y + 1 }, *count);
+                } else {
+                    Self::insert_or_increment(&mut new_beams, new_pos, *count);
+                }
+            }
+            beams = new_beams;
+        }
+        panic!()
+    }
+
+    fn insert_or_increment(map: &mut HashMap<Pos, usize>, key: Pos, delta: usize) {
+        if let Some(existing) = map.get(&key) {
+            map.insert(key, existing + delta);
+        } else {
+            map.insert(key, delta);
+        }
+    }
 }
 
 
@@ -78,6 +109,7 @@ fn main() {
             .expect(&format!("Error reading from {}", filename));
         let manifold: Manifold = text.parse().unwrap();
         println!("Splits: {}", manifold.simulate());
+        println!("Timelines: {}", manifold.quantum_simulate());
     } else {
         println!("Please provide 1 argument: Filename");
     }
