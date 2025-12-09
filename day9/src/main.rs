@@ -182,16 +182,28 @@ impl Map {
         }
         // fill from that seed
         let mut set = HashSet::new();
-        let mut current = seed;
-        loop {
-            let next = self.find_next(&set, &current);
-            set.insert(current);
-            match next {
-                Next::FillComplete => return Some(set),
-                Next::ReachedEdge => return None,
-                Next::Pos(p) => current = p
-            };
+        if self.try_fill_inner(&mut set, seed) {
+            Some(set)
+        } else {
+            None
         }
+    }
+
+    fn try_fill_inner(&self, set: &mut HashSet<Pos>, mut current: Pos) -> bool {
+        let next = self.find_next(set, &current);
+        set.insert(current);
+        match next {
+            Next::FillComplete => return true,
+            Next::ReachedEdge => return false,
+            Next::Pos(v) => {
+                for p in v {
+                    if !self.try_fill_inner(set, p) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
     }
 
     fn find_next(&self, set: &HashSet<Pos>, current: &Pos) -> Next {
@@ -204,6 +216,7 @@ impl Map {
             (1, 0),
             (1, 1)
         ];
+        let mut v = Vec::new();
         for (dx, dy) in try_deltas {
             let x = current.x as isize + dx;
             let y = current.y as isize + dy;
@@ -212,17 +225,20 @@ impl Map {
             }
             let p = Pos { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
             if !self.tiles.contains(&p) && !set.contains(&p) {
-                return Next::Pos(p);
+                v.push(p);
             }
         }
-        Next::FillComplete
+        if v.len() == 0 {
+            return Next::FillComplete
+        }
+        Next::Pos(v)
     }
 }
 
 enum Next {
     FillComplete,
     ReachedEdge,
-    Pos(Pos)//TODO make vec pos and finish
+    Pos(Vec<Pos>)
 }
 
 impl Pos {
