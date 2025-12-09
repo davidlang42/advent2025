@@ -47,43 +47,28 @@ impl Map {
         }
     }
 
-    fn largest_rect(&self) -> usize {
-        let mut max = None;
+    fn all_rects(&self) -> Vec<Rect> {
+        let mut v = Vec::new();
         for i in 0..self.red_tiles.len() {
             for j in (i+1)..self.red_tiles.len() {
                 let size = self.red_tiles[i].rect(&self.red_tiles[j]);
-                if let Some(existing) = max {
-                    if existing < size {
-                        max = Some(size);
-                    }
-                } else {
-                    max = Some(size)
-                }
+                v.push(Rect {
+                    size,
+                    corners: [self.red_tiles[i], self.red_tiles[j]]
+                });
             }
         }
-        max.unwrap()
+        v.sort_by(|a, b| b.size.cmp(&a.size));
+        v
     }
 
     fn largest_valid_rect(&self) -> usize {
-        let mut max = None;
-        for i in 0..self.red_tiles.len() {
-            for j in (i+1)..self.red_tiles.len() {
-                if !self.valid_rect(&self.red_tiles[i], &self.red_tiles[j]) {
-                    continue;
-                }
-                let size = self.red_tiles[i].rect(&self.red_tiles[j]);
-                if let Some(existing) = max {
-                    if existing < size {
-                        println!("{}", size);
-                        max = Some(size);
-                    }
-                } else {
-                    println!("{}", size);
-                    max = Some(size)
-                }
+        for r in self.all_rects() {
+            if self.valid_rect(&r.corners[0], &r.corners[1]) {
+                return r.size;
             }
         }
-        max.unwrap()
+        0
     }
 
     fn valid_rect(&self, a: &Pos, b: &Pos) -> bool {
@@ -167,6 +152,11 @@ impl Pos {
     }
 }
 
+struct Rect {
+    size: usize,
+    corners: [Pos; 2]
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {
@@ -174,7 +164,7 @@ fn main() {
         let text = fs::read_to_string(&filename)
             .expect(&format!("Error reading from {}", filename));
         let map: Map = text.parse().unwrap();
-        println!("Largest: {}", map.largest_rect());
+        println!("Largest: {}", map.all_rects().iter().next().unwrap().size);
         println!("Valid: {}", map.largest_valid_rect());
     } else {
         println!("Please provide 1 argument: Filename");
