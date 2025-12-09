@@ -117,7 +117,7 @@ impl Map {
         map.add_line(map.red_tiles.len() - 1, 0);
         //map.print(9, 14);
         map.fill_inside();
-        map.print(9, 14);
+        //map.print(9, 14);
         map
     }
 
@@ -189,7 +189,7 @@ impl Map {
         }
     }
 
-    fn try_fill_inner(&self, set: &mut HashSet<Pos>, mut current: Pos) -> bool {
+    fn try_fill_inner(&self, set: &mut HashSet<Pos>, current: Pos) -> bool {
         let next = self.find_next(set, &current);
         set.insert(current);
         match next {
