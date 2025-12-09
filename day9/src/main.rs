@@ -74,9 +74,11 @@ impl Map {
                 let size = self.red_tiles[i].rect(&self.red_tiles[j]);
                 if let Some(existing) = max {
                     if existing < size {
+                        println!("{}", size);
                         max = Some(size);
                     }
                 } else {
+                    println!("{}", size);
                     max = Some(size)
                 }
             }
@@ -97,7 +99,7 @@ impl Map {
         };
         for x in x_range {
             for y in y_range.clone() {
-                if !self.tiles.contains(&Pos { x, y }) {
+                if !self.is_inside_tile_shape(&Pos { x, y }) {
                     return false;
                 }
             }
@@ -110,14 +112,12 @@ impl Map {
             red_tiles,
             tiles: HashSet::new()
         };
-        //map.print(9, 14);
+        //map._print(9, 14);
         for i in 0..(map.red_tiles.len() - 1) {
             map.add_line(i, i+1);
         }
         map.add_line(map.red_tiles.len() - 1, 0);
-        //map.print(9, 14);
-        map.fill_inside();
-        //map.print(9, 14);
+        //map._print(9, 14);
         map
     }
 
@@ -147,70 +147,17 @@ impl Map {
         }
     }
 
-    fn fill_inside(&mut self) {
-        if let Some(set) = self.try_fill(-1, -1) {
-            for s in set  {
-                self.tiles.insert(s);
-            }
-        } else if let Some(set) = self.try_fill(-1, 1) {
-            for s in set  {
-                self.tiles.insert(s);
-            }
-        } else if let Some(set) = self.try_fill(1, -1) {
-            for s in set  {
-                self.tiles.insert(s);
-            }
-        } else if let Some(set) = self.try_fill(1, 1) {
-            for s in set  {
-                self.tiles.insert(s);
-            }
-        } else {
-            panic!("Could not fill")
+    fn is_inside_tile_shape(&self, p: &Pos) -> bool {
+        if self.tiles.contains(p) {
+            return true;
         }
-    }
-
-    fn try_fill(&self, delta_x: isize, delta_y: isize) -> Option<HashSet<Pos>> {
-        // find a seed which isn't in the tiles set
-        let mut seed = self.red_tiles[0];
-        while self.tiles.contains(&seed) {
-            let x = seed.x as isize + delta_x;
-            let y = seed.y as isize + delta_y;
-            if x < 0 || y < 0 {
-                return None;
-            }
-            seed = Pos { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
-        }
-        // const
-        let try_deltas = [
-            (-1, -1),
-            (-1, 0),
-            (-1, 1),
-            (0, -1),
-            (1, -1),
-            (1, 0),
-            (1, 1)
-        ];
-        // fill from that seed
-        let mut set = HashSet::new();
-        let mut queue = HashSet::new();
-        queue.insert(seed);
-        while queue.len() > 0 {
-            let current = *queue.iter().next().unwrap();
-            queue.remove(&current);
-            set.insert(current);
-            for (dx, dy) in try_deltas {
-                let x = current.x as isize + dx;
-                let y = current.y as isize + dy;
-                if x < 0 || y < 0 {
-                    return None; // reached edge
-                }
-                let p = Pos { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
-                if !self.tiles.contains(&p) && !set.contains(&p) {
-                    queue.insert(p);
-                }
+        let mut crossings = 0;
+        for x in 0..p.x {
+            if self.tiles.contains(&Pos { x, y: p.y }) {
+                crossings += 1;
             }
         }
-        Some(set)
+        crossings % 2 == 0 // even crossings means it was inside the shape
     }
 }
 
