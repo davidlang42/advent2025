@@ -31,7 +31,7 @@ impl FromStr for Map {
 }
 
 impl Map {
-    fn print(&self, max_x: usize, max_y: usize) {
+    fn _print(&self, max_x: usize, max_y: usize) {
         for x in 0..max_x {
             for y in 0..max_y {
                 let p = Pos {x: y, y: x};
