@@ -63,10 +63,14 @@ impl Map {
     }
 
     fn largest_valid_rect(&self) -> usize {
-        for r in self.all_rects() {
+        let rects = self.all_rects();
+        let mut i = 0;
+        for r in &rects {
             if self.valid_rect(&r.corners[0], &r.corners[1]) {
                 return r.size;
             }
+            i += 1;
+            println!("Checked {}/{}, answer is less than {}", i, rects.len(), r.size);
         }
         0
     }
