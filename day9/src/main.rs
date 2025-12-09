@@ -1,14 +1,17 @@
 use std::fs;
 use std::env;
 use std::str::FromStr;
+use std::collections::HashSet;
 
+#[derive(Hash, Eq, PartialEq, Copy, Clone)]
 struct Pos {
     x: usize,
     y: usize
 }
 
 struct Map {
-    red_tiles: Vec<Pos>
+    red_tiles: Vec<Pos>,
+    tiles: HashSet<Pos>
 }
 
 impl FromStr for Map {
@@ -23,13 +26,27 @@ impl FromStr for Map {
                 y: sections[1].parse().unwrap()
             })
         }
-        Ok(Self {
-            red_tiles
-        })
+        Ok(Self::new(red_tiles))
     }
 }
 
 impl Map {
+    fn print(&self, max_x: usize, max_y: usize) {
+        for x in 0..max_x {
+            for y in 0..max_y {
+                let p = Pos {x: y, y: x};
+                if self.red_tiles.contains(&p) {
+                    print!("{}", "#");
+                } else if self.tiles.contains(&p) {
+                    print!("{}", "X");
+                } else {
+                    print!("{}", ".");
+                }
+            }
+            println!("");
+        }
+    }
+
     fn largest_rect(&self) -> usize {
         let mut max = None;
         for i in 0..self.red_tiles.len() {
@@ -46,6 +63,166 @@ impl Map {
         }
         max.unwrap()
     }
+
+    fn largest_valid_rect(&self) -> usize {
+        let mut max = None;
+        for i in 0..self.red_tiles.len() {
+            for j in (i+1)..self.red_tiles.len() {
+                if !self.valid_rect(&self.red_tiles[i], &self.red_tiles[j]) {
+                    continue;
+                }
+                let size = self.red_tiles[i].rect(&self.red_tiles[j]);
+                if let Some(existing) = max {
+                    if existing < size {
+                        max = Some(size);
+                    }
+                } else {
+                    max = Some(size)
+                }
+            }
+        }
+        max.unwrap()
+    }
+
+    fn valid_rect(&self, a: &Pos, b: &Pos) -> bool {
+        let x_range = if a.x < b.x {
+            a.x..(b.x + 1)
+        } else {
+            b.x..(a.x + 1)
+        };
+        let y_range = if a.y < b.y {
+            a.y..(b.y + 1)
+        } else {
+            b.y..(a.y + 1)
+        };
+        for x in x_range {
+            for y in y_range.clone() {
+                if !self.tiles.contains(&Pos { x, y }) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    fn new(red_tiles: Vec<Pos>) -> Self {
+        let mut map = Self {
+            red_tiles,
+            tiles: HashSet::new()
+        };
+        //map.print(9, 14);
+        for i in 0..(map.red_tiles.len() - 1) {
+            map.add_line(i, i+1);
+        }
+        map.add_line(map.red_tiles.len() - 1, 0);
+        //map.print(9, 14);
+        map.fill_inside();
+        map.print(9, 14);
+        map
+    }
+
+    fn add_line(&mut self, i: usize, j: usize) {
+        let a = &self.red_tiles[i];
+        let b = &self.red_tiles[j];
+        if a.x == b.x {
+            if a.y < b.y {
+                for y in a.y..(b.y + 1) {
+                    self.tiles.insert(Pos { x: a.x, y });
+                }
+            } else {
+                for y in b.y..(a.y + 1) {
+                    self.tiles.insert(Pos { x: a.x, y });
+                }
+            }
+        } else {
+            if a.x < b.x {
+                for x in a.x..(b.x + 1) {
+                    self.tiles.insert(Pos { y: a.y, x });
+                }
+            } else {
+                for x in b.x..(a.x + 1) {
+                    self.tiles.insert(Pos { y: a.y, x });
+                }
+            }
+        }
+    }
+
+    fn fill_inside(&mut self) {
+        if let Some(set) = self.try_fill(-1, -1) {
+            for s in set  {
+                self.tiles.insert(s);
+            }
+        } else if let Some(set) = self.try_fill(-1, 1) {
+            for s in set  {
+                self.tiles.insert(s);
+            }
+        } else if let Some(set) = self.try_fill(1, -1) {
+            for s in set  {
+                self.tiles.insert(s);
+            }
+        } else if let Some(set) = self.try_fill(1, 1) {
+            for s in set  {
+                self.tiles.insert(s);
+            }
+        } else {
+            panic!("Could not fill")
+        }
+    }
+
+    fn try_fill(&self, delta_x: isize, delta_y: isize) -> Option<HashSet<Pos>> {
+        // find a seed which isn't in the tiles set
+        let mut seed = self.red_tiles[0];
+        while self.tiles.contains(&seed) {
+            let x = seed.x as isize + delta_x;
+            let y = seed.y as isize + delta_y;
+            if x < 0 || y < 0 {
+                return None;
+            }
+            seed = Pos { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
+        }
+        // fill from that seed
+        let mut set = HashSet::new();
+        let mut current = seed;
+        loop {
+            let next = self.find_next(&set, &current);
+            set.insert(current);
+            match next {
+                Next::FillComplete => return Some(set),
+                Next::ReachedEdge => return None,
+                Next::Pos(p) => current = p
+            };
+        }
+    }
+
+    fn find_next(&self, set: &HashSet<Pos>, current: &Pos) -> Next {
+        let try_deltas = [
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (0, -1),
+            (1, -1),
+            (1, 0),
+            (1, 1)
+        ];
+        for (dx, dy) in try_deltas {
+            let x = current.x as isize + dx;
+            let y = current.y as isize + dy;
+            if x < 0 || y < 0 {
+                return Next::ReachedEdge;
+            }
+            let p = Pos { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
+            if !self.tiles.contains(&p) && !set.contains(&p) {
+                return Next::Pos(p);
+            }
+        }
+        Next::FillComplete
+    }
+}
+
+enum Next {
+    FillComplete,
+    ReachedEdge,
+    Pos(Pos)//TODO make vec pos and finish
 }
 
 impl Pos {
@@ -62,6 +239,7 @@ fn main() {
             .expect(&format!("Error reading from {}", filename));
         let map: Map = text.parse().unwrap();
         println!("Largest: {}", map.largest_rect());
+        println!("Valid: {}", map.largest_valid_rect());
     } else {
         println!("Please provide 1 argument: Filename");
     }
