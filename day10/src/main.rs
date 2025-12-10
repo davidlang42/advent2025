@@ -134,15 +134,18 @@ fn joltage_difference(a: &Vec<usize>, b: &Vec<usize>) -> u32 {
     if a.len() != b.len() {
         panic!("Length mismatch")
     }
-    let mut sum = 0;
+    let mut max_diff = 0;
     for i in 0..a.len() {
-        if a[i] > b[i] {
-            sum += a[i] - b[i];
+        let diff = if a[i] > b[i] {
+            a[i] - b[i]
         } else {
-            sum += b[i] - a[i];
+            b[i] - a[i]
+        };
+        if diff > max_diff {
+            max_diff = diff;
         }
     }
-    sum as u32
+    max_diff as u32
 }
 
 fn main() {
