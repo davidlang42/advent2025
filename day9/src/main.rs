@@ -62,10 +62,17 @@ impl Map {
         v
     }
 
-    fn largest_valid_rect(&self) -> usize {
+    fn largest_valid_rect(&self, max_size_to_check: Option<usize>) -> usize {
         let rects = self.all_rects();
         let mut i = 0;
         for r in &rects {
+            if max_size_to_check.is_some() && r.size > max_size_to_check.unwrap() {
+                if i % 1000 == 0 {
+                    println!("Skipped {}/{}, answer is less than {}", i, rects.len(), r.size);
+                }
+                i += 1;
+                continue;
+            }
             if self.valid_rect(&r.corners[0], &r.corners[1]) {
                 return r.size;
             }
@@ -181,13 +188,18 @@ struct Rect {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() == 2 {
+    if args.len() == 2 || args.len() == 3 {
         let filename = &args[1];
         let text = fs::read_to_string(&filename)
             .expect(&format!("Error reading from {}", filename));
+        let max_size_to_check = if let Some(max) = args.get(2) {
+            Some(max.parse().unwrap())
+        } else {
+            None
+        };
         let map: Map = text.parse().unwrap();
         println!("Largest: {}", map.all_rects().iter().next().unwrap().size);
-        println!("Valid: {}", map.largest_valid_rect());
+        println!("Valid: {}", map.largest_valid_rect(max_size_to_check));
     } else {
         println!("Please provide 1 argument: Filename");
     }
