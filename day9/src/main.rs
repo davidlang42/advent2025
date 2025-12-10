@@ -115,11 +115,24 @@ impl Map {
     fn valid_rect(&self, r: &Rect) -> bool {
         //print!("Checking {}: ", r);
         for x in r.low.x..(r.high.x + 1) {
-            for y in r.low.y..(r.high.y + 1) {
-                let p = Pos { x, y };
-                if !self.is_inside_tile_shape(&p) {
-                    //println!("INVALID at {}", p);
-                    return false;
+            let row_low_end = Pos { x, y: r.low.y };
+            if !self.is_inside_tile_shape(&row_low_end) {
+                //println!("INVALID at {}", p);
+                return false;
+            }
+            let row_high_end = Pos { x, y: r.high.y };
+            if !self.is_inside_tile_shape(&row_high_end) {
+                //println!("INVALID at {}", p);
+                return false;
+            }
+            let y_from = r.low.y + 1;
+            let y_to = r.high.y - 1;
+            if self.row_contains_edges(x, y_from, y_to) {
+                for y in y_from..(y_to + 1) {
+                    if !self.is_inside_tile_shape(&Pos { x, y }) {
+                        //println!("INVALID at {}", p);
+                        return false;
+                    }
                 }
             }
         }
@@ -174,6 +187,16 @@ impl Map {
                 }
             }
         }
+    }
+
+    fn row_contains_edges(&self, x: usize, y_from: usize, y_to: usize) -> bool {
+        for y in y_from..(y_to + 1) {
+            let p = Pos { x, y };
+            if self.tiles.contains(&p) {
+                return true;
+            }
+        }
+        false
     }
 
     fn is_inside_tile_shape(&self, p: &Pos) -> bool {
