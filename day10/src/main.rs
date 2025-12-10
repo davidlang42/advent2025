@@ -59,20 +59,44 @@ impl FromStr for ButtonSet {
 }
 
 impl Machine {
-    fn minimum_presses_to_goal(&self) -> usize {
+    fn minimum_presses_to_light_goal(&self) -> usize {
         let mut state = Vec::new();
         for _ in 0..self.goal.len() {
             state.push(false);
         }
-        let result = bfs(&state, |s| self.successors(s), |s| state_matches(s, &self.goal));
+        let result = bfs(&state, |s| self.successors_light(s), |s| state_matches(s, &self.goal));
         result.unwrap().len() - 1
     }
 
-    fn successors(&self, state: &Vec<bool>) -> Vec<Vec<bool>> {
+    fn successors_light(&self, state: &Vec<bool>) -> Vec<Vec<bool>> {
         let mut v = Vec::new();
         for i in 0..self.buttons.len() {
             let mut new_state = state.clone();
             self.buttons[i].push(&mut new_state);
+            v.push(new_state);
+        }
+        v
+    }
+
+    fn minimum_presses_to_joltage_goal(&self) -> usize {
+        let mut state = Vec::new();
+        for _ in 0..self.joltages.len() {
+            state.push(0);
+        }
+        let result = bfs(&state, |s| self.successors_joltage(s, &self.joltages), |s| joltage_matches(s, &self.joltages));
+        result.unwrap().len() - 1
+    }
+
+    fn successors_joltage(&self, state: &Vec<usize>, max: &Vec<usize>) -> Vec<Vec<usize>> {
+        let mut v = Vec::new();
+        for i in 0..state.len() {
+            if state[i] > max[i] {
+                return v; // no valid options from here
+            }
+        }
+        for i in 0..self.buttons.len() {
+            let mut new_state = state.clone();
+            self.buttons[i].push_jolt(&mut new_state);
             v.push(new_state);
         }
         v
@@ -85,9 +109,27 @@ impl ButtonSet {
             state[*b] = !state[*b];
         }
     }
+
+    fn push_jolt(&self, state: &mut Vec<usize>) {
+        for b in &self.0 {
+            state[*b] += 1;
+        }
+    }
 }
 
 fn state_matches(a: &Vec<bool>, b: &Vec<bool>) -> bool {
+    if a.len() != b.len() {
+        panic!("Length mismatch")
+    }
+    for i in 0..a.len() {
+        if a[i] != b[i] {
+            return false;
+        }
+    }
+    true
+}
+
+fn joltage_matches(a: &Vec<usize>, b: &Vec<usize>) -> bool {
     if a.len() != b.len() {
         panic!("Length mismatch")
     }
@@ -107,12 +149,20 @@ fn main() {
             .expect(&format!("Error reading from {}", filename));
         let machines: Vec<Machine> = text.lines().map(|s| s.parse().unwrap()).collect();
         let mut sum = 0;
-        for m in machines {
-            let min = m.minimum_presses_to_goal();
+        for m in &machines {
+            let min = m.minimum_presses_to_light_goal();
             println!("{}", min);
             sum += min;
         }
-        println!("Answer: {}", sum);
+        println!("Part1: {}", sum);
+
+        sum = 0;
+        for m in machines {
+            let min = m.minimum_presses_to_joltage_goal();
+            println!("{}", min);
+            sum += min;
+        }
+        println!("Part2: {}", sum);
     } else {
         println!("Please provide 1 argument: Filename");
     }
