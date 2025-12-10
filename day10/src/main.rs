@@ -87,17 +87,13 @@ impl Machine {
         result.unwrap().len() - 1
     }
 
-    fn successors_joltage(&self, state: &Vec<usize>, max: &Vec<usize>) -> Vec<Vec<usize>> {
+    fn successors_joltage(&self, state: &Vec<usize>, goal_state: &Vec<usize>) -> Vec<Vec<usize>> {
         let mut v = Vec::new();
-        for i in 0..state.len() {
-            if state[i] > max[i] {
-                return v; // no valid options from here
-            }
-        }
         for i in 0..self.buttons.len() {
             let mut new_state = state.clone();
-            self.buttons[i].push_jolt(&mut new_state);
-            v.push(new_state);
+            if self.buttons[i].push_jolt(&mut new_state, goal_state) {
+                v.push(new_state);
+            }
         }
         v
     }
@@ -110,10 +106,14 @@ impl ButtonSet {
         }
     }
 
-    fn push_jolt(&self, state: &mut Vec<usize>) {
+    fn push_jolt(&self, state: &mut Vec<usize>, goal: &Vec<usize>) -> bool {
         for b in &self.0 {
+            if state[*b] == goal[*b] {
+                return false; // too big to be valid
+            }
             state[*b] += 1;
         }
+        true
     }
 }
 
