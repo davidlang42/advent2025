@@ -85,39 +85,19 @@ impl Map {
     }
 
     fn valid_rect(&self, a: &Pos, b: &Pos) -> bool {
-        if (a.x as isize - b.x as isize).abs() > (a.y as isize - b.y as isize).abs() {
-            // check by col
-            let y_range = if a.y < b.y {
-                (a.y + 1)..b.y
-            } else {
-                (b.y + 1)..a.y
-            };
-            let (x_from, x_to) = if b.x > a.x {
-                (a.x + 1, b.x - 1)
-            } else {
-                (b.x + 1, a.x - 1)
-            };
-            for y in y_range {
-                if self.does_col_cross_edge(x_from, x_to, y) {
-                    return false;
-                }
-            }
+        let x_range = if a.x < b.x {
+            (a.x + 1)..b.x
         } else {
-            // check by row
-            let x_range = if a.x < b.x {
-                (a.x + 1)..b.x
-            } else {
-                (b.x + 1)..a.x
-            };
-            let (y_from, y_to) = if b.y > a.y {
-                (a.y + 1, b.y - 1)
-            } else {
-                (b.y + 1, a.y - 1)
-            };
-            for x in x_range {
-                if self.does_row_cross_edge(x, y_from, y_to) {
-                    return false;
-                }
+            (b.x + 1)..a.x
+        };
+        let (y_from, y_to) = if b.y > a.y {
+            (a.y, b.y)
+        } else {
+            (b.y, a.y)
+        };
+        for x in x_range {
+            if !self.is_row_inside_tile_shape(x, y_from, y_to) {
+                return false;
             }
         }
         self.is_inside_tile_shape(&Pos {
@@ -175,24 +155,14 @@ impl Map {
         }
     }
 
-    fn does_row_cross_edge(&self, x: usize, y_from: usize, y_to: usize) -> bool {
-        for y in y_from..(y_to + 1) {
+    fn is_row_inside_tile_shape(&self, x: usize, y_from: usize, y_to: usize) -> bool {
+        for y in (y_from + 1)..y_to {
             let p = Pos { x, y };
             if self.tiles.contains(&p) {
-                return true;
+                return false;
             }
         }
-        false
-    }
-
-    fn does_col_cross_edge(&self, x_from: usize, x_to: usize, y: usize) -> bool {
-        for x in x_from..(x_to + 1) {
-            let p = Pos { x, y };
-            if self.tiles.contains(&p) {
-                return true;
-            }
-        }
-        false
+        true
     }
 
     fn is_inside_tile_shape(&self, p: &Pos) -> bool {
