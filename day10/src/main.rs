@@ -2,6 +2,7 @@ use std::fs;
 use std::env;
 use std::str::FromStr;
 use pathfinding::prelude::bfs;
+use pathfinding::prelude::astar;
 
 #[derive(Debug)]
 struct Machine {
@@ -83,16 +84,16 @@ impl Machine {
         for _ in 0..self.joltages.len() {
             state.push(0);
         }
-        let result = bfs(&state, |s| self.successors_joltage(s, &self.joltages), |s| joltage_matches(s, &self.joltages));
-        result.unwrap().len() - 1
+        let result = astar(&state, |s| self.successors_joltage(s, &self.joltages), |s| joltage_difference(s, &self.joltages), |s| joltage_difference(s, &self.joltages) == 0);
+        result.unwrap().0.len() - 1
     }
 
-    fn successors_joltage(&self, state: &Vec<usize>, goal_state: &Vec<usize>) -> Vec<Vec<usize>> {
+    fn successors_joltage(&self, state: &Vec<usize>, goal_state: &Vec<usize>) -> Vec<(Vec<usize>, u32)> {
         let mut v = Vec::new();
         for i in 0..self.buttons.len() {
             let mut new_state = state.clone();
             if self.buttons[i].push_jolt(&mut new_state, goal_state) {
-                v.push(new_state);
+                v.push((new_state, 1));
             }
         }
         v
@@ -129,16 +130,19 @@ fn state_matches(a: &Vec<bool>, b: &Vec<bool>) -> bool {
     true
 }
 
-fn joltage_matches(a: &Vec<usize>, b: &Vec<usize>) -> bool {
+fn joltage_difference(a: &Vec<usize>, b: &Vec<usize>) -> u32 {
     if a.len() != b.len() {
         panic!("Length mismatch")
     }
+    let mut sum = 0;
     for i in 0..a.len() {
-        if a[i] != b[i] {
-            return false;
+        if a[i] > b[i] {
+            sum += a[i] - b[i];
+        } else {
+            sum += b[i] - a[i];
         }
     }
-    true
+    sum as u32
 }
 
 fn main() {
