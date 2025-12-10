@@ -3,12 +3,14 @@ use std::env;
 use std::str::FromStr;
 use pathfinding::prelude::bfs;
 use pathfinding::prelude::astar;
+use num_integer::gcd;
 
 #[derive(Debug)]
 struct Machine {
     goal: Vec<bool>,
     buttons: Vec<ButtonSet>,
-    joltages: Vec<usize>
+    joltages: Vec<usize>,
+    joltage_factor: usize
 }
 
 #[derive(Debug)]
@@ -36,10 +38,20 @@ impl FromStr for Machine {
             joltages.push(j.parse().unwrap())
         }
 
+        // reduce joltage
+        let joltage_factor = joltages.iter().skip(1).fold(joltages[0], |acc, &x| gcd(acc, x));
+        if joltage_factor < 1 {
+            panic!()
+        }
+        for j in 0..joltages.len() {
+            joltages[j] /= joltage_factor;
+        }
+
         Ok(Self {
             goal,
             buttons,
-            joltages
+            joltages,
+            joltage_factor
         })
     }
 }
@@ -85,7 +97,7 @@ impl Machine {
             state.push(0);
         }
         let result = astar(&state, |s| self.successors_joltage(s, &self.joltages), |s| joltage_difference(s, &self.joltages), |s| joltage_difference(s, &self.joltages) == 0);
-        result.unwrap().0.len() - 1
+        (result.unwrap().0.len() - 1) * self.joltage_factor
     }
 
     fn successors_joltage(&self, state: &Vec<usize>, goal_state: &Vec<usize>) -> Vec<(Vec<usize>, u32)> {
