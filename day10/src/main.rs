@@ -110,7 +110,7 @@ impl ButtonSet {
     fn push_jolt(&self, state: &mut Vec<usize>, goal: &Vec<usize>) -> bool {
         for b in &self.0 {
             if state[*b] == goal[*b] {
-                return false; // too big to be valid
+                return false; // too big to be valid if incremented
             }
             state[*b] += 1;
         }
