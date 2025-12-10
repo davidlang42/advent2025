@@ -180,7 +180,7 @@ impl Map {
                 crossings += 1;
             }
         }
-        crossings % 2 == 0 // even crossings means it was inside the shape
+        crossings % 2 == 1 // odd crossings means it was inside the shape
     }
 }
 
