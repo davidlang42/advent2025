@@ -73,7 +73,7 @@ impl Map {
                 i += 1;
                 continue;
             }
-            if self.valid_rect(&r.corners[0], &r.corners[1], r.size) {
+            if self.valid_rect(&r.corners[0], &r.corners[1]) {
                 return r.size;
             }
             i += 1;
@@ -84,7 +84,7 @@ impl Map {
         0
     }
 
-    fn valid_rect(&self, a: &Pos, b: &Pos, size: usize) -> bool {
+    fn valid_rect(&self, a: &Pos, b: &Pos) -> bool {
         // check all 4 edges first
         if !self.is_row_inside_tile_shape(a.x, a.y, b.y) {
             return false;
@@ -109,31 +109,9 @@ impl Map {
                 return false;
             }
         }
-        // double check
-        let x_range2 = if a.x < b.x {
-            a.x..(b.x + 1)
-        } else {
-            b.x..(a.x + 1)
-        };
-        let y_range2 = if a.y < b.y {
-            a.y..(b.y + 1)
-        } else {
-            b.y..(a.y + 1)
-        };
-        println!("Potentially: {} ({},{})-({},{})", size, a.x, a.y, b.x, b.y);
-        let mut result = true;
-        for x in x_range2 {
-            for y in y_range2.clone() {
-                let p = Pos { x, y };
-                if !self.is_inside_tile_shape(&p) {
-                    println!("But pos ({},{}) not valid", x, y);
-                    result = false;
-                }
-            }
-        }
-        result
+        true
     }
-    
+
     fn new(red_tiles: Vec<Pos>) -> Self {
         let mut map = Self {
             red_tiles,
