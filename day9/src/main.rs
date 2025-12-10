@@ -113,26 +113,35 @@ impl Map {
     }
 
     fn add_line(&mut self, i: usize, j: usize) {
+        // line from a (including a) to b (NOT including b)
         let a = &self.red_tiles[i];
         let b = &self.red_tiles[j];
         if a.x == b.x {
             if a.y < b.y {
-                for y in a.y..(b.y + 1) {
-                    self.tiles.insert(Pos { x: a.x, y });
+                for y in a.y..b.y {
+                    if !self.tiles.insert(Pos { x: a.x, y }) {
+                        panic!("Overlapping lines")
+                    }
                 }
             } else {
-                for y in b.y..(a.y + 1) {
-                    self.tiles.insert(Pos { x: a.x, y });
+                for y in (b.y + 1)..(a.y + 1) {
+                    if !self.tiles.insert(Pos { x: a.x, y }) {
+                        panic!("Overlapping lines")
+                    }
                 }
             }
         } else {
             if a.x < b.x {
-                for x in a.x..(b.x + 1) {
-                    self.tiles.insert(Pos { y: a.y, x });
+                for x in a.x..b.x {
+                    if !self.tiles.insert(Pos { y: a.y, x }) {
+                        panic!("Overlapping lines")
+                    }
                 }
             } else {
-                for x in b.x..(a.x + 1) {
-                    self.tiles.insert(Pos { y: a.y, x });
+                for x in (b.x + 1)..(a.x + 1) {
+                    if !self.tiles.insert(Pos { y: a.y, x }) {
+                        panic!("Overlapping lines")
+                    }
                 }
             }
         }
