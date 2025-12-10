@@ -101,8 +101,22 @@ impl Machine {
     }
 
     fn successors_joltage(&self, state: &Vec<usize>, goal_state: &Vec<usize>) -> Vec<(Vec<usize>, u32)> {
+        // find state index which needs most work
+        let mut max_i = 0;
+        let mut max_diff = (state[0] as isize - goal_state[0] as isize).abs();
+        for i in 1..state.len() {
+            let diff = (state[i] as isize - goal_state[i] as isize).abs();
+            if diff > max_diff {
+                max_diff = diff;
+                max_i = i;
+            }
+        }
+        // only offer options that move *that* index
         let mut v = Vec::new();
         for i in 0..self.buttons.len() {
+            if !self.buttons[i].0.contains(&max_i) {
+                continue;
+            }
             let mut new_state = state.clone();
             if self.buttons[i].push_jolt(&mut new_state, goal_state) {
                 v.push((new_state, 1));
