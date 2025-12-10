@@ -85,24 +85,10 @@ impl Map {
     }
 
     fn valid_rect(&self, a: &Pos, b: &Pos) -> bool {
-        // check all 4 edges first
-        if !self.is_row_inside_tile_shape(a.x, a.y, b.y) {
-            return false;
-        }
-        if !self.is_col_inside_tile_shape(a.x, b.x, a.y) {
-            return false;
-        }
-        if !self.is_row_inside_tile_shape(b.x, a.y, b.y) {
-            return false;
-        }
-        if !self.is_col_inside_tile_shape(a.x, b.x, b.y) {
-            return false;
-        }
-        // then check the rows inside
         let x_range = if a.x < b.x {
-            (a.x + 1)..b.x
+            a.x..(b.x + 1)
         } else {
-            (b.x + 1)..a.x
+            b.x..(a.x + 1)
         };
         for x in x_range {
             if !self.is_row_inside_tile_shape(x, a.y, b.y) {
@@ -168,29 +154,6 @@ impl Map {
         let mut prev_tile = false;
         let mut non_tile = None;
         for y in (y_from + 1)..y_to {
-            let p = Pos { x, y };
-            if self.tiles.contains(&p) {
-                prev_tile = true; // we've hit one edge inside the rect
-            } else if prev_tile {
-                return false; // after hitting one edge we didn't immediately hit another, so we must have left (or entered) the inside of the shape
-            } else if non_tile.is_none() {
-                non_tile = Some(p);
-            }
-        }
-        if non_tile.is_none() {
-            true // all spaces inside the rect were edge tiles
-        } else {
-            self.is_inside_tile_shape(&non_tile.unwrap()) // the whole row was either inside or fully outside the shape
-        }
-    }
-
-    fn is_col_inside_tile_shape(&self, x_from: usize, x_to: usize, y: usize) -> bool {
-        if x_to < x_from {
-            return self.is_row_inside_tile_shape(x_to, x_from, y);
-        }
-        let mut prev_tile = false;
-        let mut non_tile = None;
-        for x in (x_from + 1)..x_to {
             let p = Pos { x, y };
             if self.tiles.contains(&p) {
                 prev_tile = true; // we've hit one edge inside the rect
