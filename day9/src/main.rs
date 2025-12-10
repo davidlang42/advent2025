@@ -115,25 +115,17 @@ impl Map {
     fn valid_rect(&self, r: &Rect) -> bool {
         //print!("Checking {}: ", r);
         for x in r.low.x..(r.high.x + 1) {
-            let row_low_end = Pos { x, y: r.low.y };
-            if !self.is_inside_tile_shape(&row_low_end) {
+            let low_end = Pos { x, y: r.low.y };
+            if !self.is_inside_tile_shape(&low_end) {
                 //println!("INVALID at {}", p);
                 return false;
             }
-            let row_high_end = Pos { x, y: r.high.y };
-            if !self.is_inside_tile_shape(&row_high_end) {
-                //println!("INVALID at {}", p);
-                return false;
-            }
+            let high_end = Pos { x, y: r.high.y };
             let y_from = r.low.y + 1;
             let y_to = r.high.y - 1;
-            if self.row_contains_edges(x, y_from, y_to) {
-                for y in y_from..(y_to + 1) {
-                    if !self.is_inside_tile_shape(&Pos { x, y }) {
-                        //println!("INVALID at {}", p);
-                        return false;
-                    }
-                }
+            if self.count_edge_crossings(x, self.tiles.contains(&low_end), y_from, y_to, self.tiles.contains(&high_end)) > 0 {
+                //println!("INVALID at {}", p);
+                return false;
             }
         }
         //println!("VALID");
@@ -189,24 +181,11 @@ impl Map {
         }
     }
 
-    fn row_contains_edges(&self, x: usize, y_from: usize, y_to: usize) -> bool {
-        for y in y_from..(y_to + 1) {
-            let p = Pos { x, y };
-            if self.tiles.contains(&p) {
-                return true;
-            }
-        }
-        false
-    }
-
-    fn is_inside_tile_shape(&self, p: &Pos) -> bool {
-        if self.tiles.contains(p) {
-            return true;
-        }
+    fn count_edge_crossings(&self, x: usize, edge_before: bool, y_from: usize, y_to: usize, edge_after: bool) -> usize {
         let mut crossings = 0;
-        let mut last_was_edge = false;
-        for x in 0..p.x {
-            if self.tiles.contains(&Pos { x, y: p.y }) {
+        let mut last_was_edge = edge_before;
+        for y in y_from..(y_to + 1) {
+            if self.tiles.contains(&Pos { x, y }) {
                 if !last_was_edge {
                     crossings += 1;
                     last_was_edge = true;
@@ -215,7 +194,17 @@ impl Map {
                 last_was_edge = false;
             }
         }
-        crossings % 2 == 1 // odd crossings means it was inside the shape
+        if last_was_edge != edge_after {
+            crossings += 1;
+        }
+        crossings
+    }
+
+    fn is_inside_tile_shape(&self, p: &Pos) -> bool {
+        if self.tiles.contains(p) {
+            return true;
+        }
+        self.count_edge_crossings(p.x, false, 0, p.y, false) % 2 == 1 // odd crossings means it was inside the shape
     }
 }
 
