@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+use std::fmt::Display;
 use std::fs;
 use std::env;
 use std::str::FromStr;
@@ -47,63 +49,82 @@ impl Map {
         }
     }
 
+    fn largest_rect(&self) -> usize {
+        let mut max = None;
+        for r in self.all_rects() {
+            if let Some(existing) = max {
+                if r.size > existing {
+                    max = Some(r.size);
+                }
+            } else {
+                max = Some(r.size);
+            }
+        }
+        max.unwrap()
+    }
+
     fn all_rects(&self) -> Vec<Rect> {
         let mut v = Vec::new();
         for i in 0..self.red_tiles.len() {
             for j in (i+1)..self.red_tiles.len() {
-                let size = self.red_tiles[i].rect(&self.red_tiles[j]);
-                v.push(Rect {
-                    size,
-                    corners: [self.red_tiles[i], self.red_tiles[j]]
-                });
+                v.push(Rect::new(self.red_tiles[i],self.red_tiles[j]));
             }
         }
-        v.sort_by(|a, b| b.size.cmp(&a.size));
         v
     }
 
-    fn largest_valid_rect(&self, max_size_to_check: Option<usize>) -> usize {
-        let rects = self.all_rects();
-        let mut i = 0;
-        for r in &rects {
-            if max_size_to_check.is_some() && r.size > max_size_to_check.unwrap() {
-                if i % 1000 == 0 {
-                    println!("Skipped {}/{}, answer is less than {}", i, rects.len(), r.size);
+    fn largest_valid_rect(&self) -> usize {
+        let mut all_rects =self.all_rects();
+        all_rects.sort_by(|a,b| a.size.cmp(&b.size)); // process in increasing order so we narrow out bad ones first
+        let mut rects = VecDeque::new();
+        for r in all_rects {
+            rects.push_back(r);
+        }
+        let mut max = None;
+        while rects.len() > 0 {
+            let rect = rects.pop_front().unwrap();
+            if self.valid_rect(&rect) {
+                // valid rect, find the highest
+                if let Some(existing) = max {
+                    if rect.size > existing {
+                        max = Some(rect.size);
+                        println!("Max valid rect {}", rect.size);
+                    }
+                } else {
+                    max = Some(rect.size);
+                    println!("First valid rect {}", rect.size);
                 }
-                i += 1;
-                continue;
-            }
-            if self.valid_rect(&r.corners[0], &r.corners[1]) {
-                return r.size;
-            }
-            i += 1;
-            if i % 1000 == 0 {
-                println!("Checked {}/{}, answer is less than {}", i, rects.len(), r.size);
+                // any rects smaller than this (valid) rect dont need checking because they wont be the max even if valid
+                // let before = rects.len();
+                // rects.retain(|r| r.size > rect.size);
+                // let after = rects.len();
+                // println!("Dropped {} small options, now {} remaining", before - after, after);
+            } else {
+                // any rects which contain this (invalid) rect must also be invalid
+                let before = rects.len();
+                rects.retain(|r| !r.contains_rect(&rect));
+                let after = rects.len();
+                if before != after {
+                    println!("Dropped {} invalid options, now {} remaining", before - after, after);
+                }
             }
         }
-        0
+        max.unwrap()
     }
 
-    fn valid_rect(&self, a: &Pos, b: &Pos) -> bool {
-        let x_range = if a.x < b.x {
-            (a.x + 1)..b.x
-        } else {
-            (b.x + 1)..a.x
-        };
-        let (y_from, y_to) = if b.y > a.y {
-            (a.y, b.y)
-        } else {
-            (b.y, a.y)
-        };
-        for x in x_range {
-            if !self.is_row_inside_tile_shape(x, y_from, y_to) {
-                return false;
+    fn valid_rect(&self, r: &Rect) -> bool {
+        //print!("Checking {}: ", r);
+        for x in r.low.x..(r.high.x + 1) {
+            for y in r.low.y..(r.high.y + 1) {
+                let p = Pos { x, y };
+                if !self.is_inside_tile_shape(&p) {
+                    //println!("INVALID at {}", p);
+                    return false;
+                }
             }
         }
-        self.is_inside_tile_shape(&Pos {
-            x: (a.x + b.x) / 2,
-            y: (a.y + b.y) / 2
-        })
+        //println!("VALID");
+        true
     }
 
     fn new(red_tiles: Vec<Pos>) -> Self {
@@ -155,55 +176,79 @@ impl Map {
         }
     }
 
-    fn is_row_inside_tile_shape(&self, x: usize, y_from: usize, y_to: usize) -> bool {
-        for y in (y_from + 1)..y_to {
-            let p = Pos { x, y };
-            if self.tiles.contains(&p) {
-                return false;
-            }
-        }
-        true
-    }
-
     fn is_inside_tile_shape(&self, p: &Pos) -> bool {
         if self.tiles.contains(p) {
             return true;
         }
         let mut crossings = 0;
+        let mut last_was_edge = false;
         for x in 0..p.x {
             if self.tiles.contains(&Pos { x, y: p.y }) {
-                crossings += 1;
+                if !last_was_edge {
+                    crossings += 1;
+                    last_was_edge = true;
+                }
+            } else {
+                last_was_edge = false;
             }
         }
         crossings % 2 == 1 // odd crossings means it was inside the shape
     }
 }
 
-impl Pos {
-    fn rect(&self, other: &Pos) -> usize {
-        ((self.x as isize - other.x as isize + 1).abs() * (self.y as isize - other.y as isize + 1).abs()).try_into().unwrap()
+impl Display for Pos {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
+    }
+}
+
+impl Display for Rect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{} [{}]", self.actual[0], self.actual[1], self.size)
     }
 }
 
 struct Rect {
+    low: Pos,
+    high: Pos,
     size: usize,
-    corners: [Pos; 2]
+    actual: [Pos; 2]
+}
+
+impl Rect {
+    fn contains_pos(&self, p: &Pos) -> bool {
+        p.x >= self.low.x && p.x <= self.high.x && p.y >= self.low.y && p.y <= self.high.y
+    }
+
+    fn contains_rect(&self, r: &Rect) -> bool {
+        self.contains_pos(&r.low) && self.contains_pos(&r.high)
+    }
+
+    fn new(a: Pos, b: Pos) -> Self {
+        let (low, high) = match (a.x > b.x, a.y > b.y) {
+            (true, true) => (b, a),
+            (false, false) => (a, b),
+            (true, false) => (Pos { x: b.x, y: a.y }, Pos { x: a.x, y: b.y }),
+            (false, true) => (Pos { x: a.x, y: b.y }, Pos { x: b.x, y: a.y }),
+        };
+        Rect {
+            low,
+            high,
+            size: (high.x - low.x + 1) * (high.y - low.y + 1),
+            actual: [a, b]
+        }
+    }
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() == 2 || args.len() == 3 {
+    if args.len() == 2 {
         let filename = &args[1];
         let text = fs::read_to_string(&filename)
             .expect(&format!("Error reading from {}", filename));
-        let max_size_to_check = if let Some(max) = args.get(2) {
-            Some(max.parse().unwrap())
-        } else {
-            None
-        };
         let map: Map = text.parse().unwrap();
-        println!("Largest: {}", map.all_rects().iter().next().unwrap().size);
-        println!("Valid: {}", map.largest_valid_rect(max_size_to_check));
+        println!("Largest: {}", map.largest_rect());
+        println!("Valid: {}", map.largest_valid_rect());
     } else {
         println!("Please provide 1 argument: Filename");
     }
