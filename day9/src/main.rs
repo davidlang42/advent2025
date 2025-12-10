@@ -86,16 +86,24 @@ impl Map {
 
     fn valid_rect(&self, a: &Pos, b: &Pos) -> bool {
         let x_range = if a.x < b.x {
-            a.x..(b.x + 1)
+            (a.x + 1)..b.x
         } else {
-            b.x..(a.x + 1)
+            (b.x + 1)..a.x
+        };
+        let (y_from, y_to) = if b.y > a.y {
+            (a.y, b.y)
+        } else {
+            (b.y, a.y)
         };
         for x in x_range {
-            if !self.is_row_inside_tile_shape(x, a.y, b.y) {
+            if !self.is_row_inside_tile_shape(x, y_from, y_to) {
                 return false;
             }
         }
-        true
+        self.is_inside_tile_shape(&Pos {
+            x: (a.x + b.x) / 2,
+            y: (a.y + b.y) / 2
+        })
     }
 
     fn new(red_tiles: Vec<Pos>) -> Self {
@@ -148,26 +156,13 @@ impl Map {
     }
 
     fn is_row_inside_tile_shape(&self, x: usize, y_from: usize, y_to: usize) -> bool {
-        if y_to < y_from {
-            return self.is_row_inside_tile_shape(x, y_to, y_from);
-        }
-        let mut prev_tile = false;
-        let mut non_tile = None;
         for y in (y_from + 1)..y_to {
             let p = Pos { x, y };
             if self.tiles.contains(&p) {
-                prev_tile = true; // we've hit one edge inside the rect
-            } else if prev_tile {
-                return false; // after hitting one edge we didn't immediately hit another, so we must have left (or entered) the inside of the shape
-            } else if non_tile.is_none() {
-                non_tile = Some(p);
+                return false;
             }
         }
-        if non_tile.is_none() {
-            true // all spaces inside the rect were edge tiles
-        } else {
-            self.is_inside_tile_shape(&non_tile.unwrap()) // the whole row was either inside or fully outside the shape
-        }
+        true
     }
 
     fn is_inside_tile_shape(&self, p: &Pos) -> bool {
