@@ -70,7 +70,9 @@ impl Map {
                 return r.size;
             }
             i += 1;
-            println!("Checked {}/{}, answer is less than {}", i, rects.len(), r.size);
+            if i % 1000 == 0 {
+                println!("Checked {}/{}, answer is less than {}", i, rects.len(), r.size);
+            }
         }
         0
     }
@@ -81,16 +83,9 @@ impl Map {
         } else {
             b.x..(a.x + 1)
         };
-        let y_range = if a.y < b.y {
-            a.y..(b.y + 1)
-        } else {
-            b.y..(a.y + 1)
-        };
         for x in x_range {
-            for y in y_range.clone() {
-                if !self.is_inside_tile_shape(&Pos { x, y }) {
-                    return false;
-                }
+            if !self.is_row_inside_tile_shape(x, a.y, b.y) {
+                return false;
             }
         }
         true
@@ -133,6 +128,29 @@ impl Map {
                     self.tiles.insert(Pos { y: a.y, x });
                 }
             }
+        }
+    }
+
+    fn is_row_inside_tile_shape(&self, x: usize, y_from: usize, y_to: usize) -> bool {
+        if y_to < y_from {
+            return self.is_row_inside_tile_shape(x, y_to, y_from);
+        }
+        let mut prev_tile = false;
+        let mut non_tile = None;
+        for y in (y_from + 1)..y_to {
+            let p = Pos { x, y };
+            if self.tiles.contains(&p) {
+                prev_tile = true; // we've hit one edge inside the rect
+            } else if prev_tile {
+                return false; // after hitting one edge we didn't immediately hit another, so we must have left (or entered) the inside of the shape
+            } else if non_tile.is_none() {
+                non_tile = Some(p);
+            }
+        }
+        if non_tile.is_none() {
+            true // all spaces inside the rect were edge tiles
+        } else {
+            self.is_inside_tile_shape(&non_tile.unwrap()) // the whole row was either inside or fully outside the shape
         }
     }
 
