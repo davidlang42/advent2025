@@ -1,6 +1,7 @@
 use std::fs;
 use std::env;
 use std::str::FromStr;
+use pathfinding::prelude::count_paths;
 
 #[derive(Debug)]
 struct Device {
@@ -69,6 +70,13 @@ impl Path {
     }
 }
 
+#[derive(Clone, Hash, Eq, PartialEq)]
+struct State {
+    at: String,
+    fft: bool,
+    dac: bool
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {
@@ -77,8 +85,34 @@ fn main() {
             .expect(&format!("Error reading from {}", filename));
         let map: Map = text.parse().unwrap();
         let paths = map.paths("you", "out");
-        println!("Answer: {}", paths.len());
+        println!("Part1: {}", paths.len());
+
+        let start = State { at: "svr".to_string(), dac: false, fft: false };
+        let end = State { at: "out".to_string(), dac: true, fft: true };
+        let count = count_paths(start,
+            |s| sucessors(s, &map),
+            |s| *s == end);
+        println!("Part2: {}", count);
     } else {
         println!("Please provide 1 argument: Filename");
     }
+}
+
+fn sucessors(state: &State, map: &Map) -> Vec<State> {
+    let mut v = Vec::new();
+    for d in &map.devices {
+        if d.name == state.at {
+            for o in &d.outputs {
+                let mut new_state = state.clone();
+                new_state.at = o.to_string();
+                if o == "dac" {
+                    new_state.dac = true;
+                } else if o == "fft" {
+                    new_state.fft = true;
+                }
+                v.push(new_state);
+            }
+        }
+    }
+    v
 }
