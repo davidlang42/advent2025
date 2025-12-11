@@ -115,6 +115,9 @@ impl JoltageState {
         let mut min: Option<(usize, Vec<&Button>)> = None;
         for i in unfinished_indices {
             let available_buttons: Vec<_> = all_buttons.iter().filter(|b| b.indices.contains(&i) && !finished_indices.iter().any(|f| b.indices.contains(f))).collect();
+            if available_buttons.len() == 0 {
+                continue;
+            }
             if let Some((_min_r, min_b)) = &min {
                 if available_buttons.len() < min_b.len() {
                     min = Some((i, available_buttons));
@@ -123,17 +126,40 @@ impl JoltageState {
                 min = Some((i, available_buttons));
             }
         }
-        let (_index, available_buttons) = min.unwrap();
+        if min.is_none() {
+            return Vec::new(); // no available buttons
+        }
+        let (index, available_buttons) = min.unwrap();
         
         // enumerate options for pressing the available buttons
         let mut v = Vec::new();
-        for button in available_buttons {
-            let max_presses = button.indices.iter().map(|i| remaining[*i]).min().unwrap();
-            for times in 0..(max_presses + 1) {
-                let mut new_state = self.clone();
-                button.push(&mut new_state, times);
-                if new_state.is_valid(goal) {
-                    v.push((new_state, times as u32));
+        let remaining_for_this_index = remaining[index];
+        let remaining_for_this_index_u32 = remaining_for_this_index as u32;
+        for option in Self::combinations_of_button_presses(self, &available_buttons, remaining_for_this_index, goal) {
+            v.push((option, remaining_for_this_index_u32));
+        }
+        v
+    }
+
+    fn combinations_of_button_presses(initial_state: &Self, remaining_buttons: &[&Button], remaining_presses: usize, goal: &JoltageState) -> Vec<Self> {
+        let mut v = Vec::new();
+        if remaining_buttons.len() == 1 {
+            let mut new_state = initial_state.clone();
+            remaining_buttons[0].push(&mut new_state, remaining_presses); // only 1 button left, press it the remaining times
+            if new_state.is_valid(goal) {
+                v.push(new_state);
+            }
+        } else {
+            // try the first button any number of times
+            for times in 0..(remaining_presses + 1) {
+                let mut new_state = initial_state.clone();
+                remaining_buttons[0].push(&mut new_state, times);
+                if !new_state.is_valid(goal) {
+                    continue;
+                }
+                // then generate combinations for remaining buttons & presses
+                for option in Self::combinations_of_button_presses(&new_state, &remaining_buttons[1..], remaining_presses - times, goal) {
+                    v.push(option);
                 }
             }
         }
