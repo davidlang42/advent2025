@@ -151,12 +151,10 @@ impl JoltageState {
             }
         } else {
             // try the first button any number of times
-            for times in 0..(remaining_presses + 1) {
+            let max_presses = remaining_buttons[0].indices.iter().map(|i| goal.0[*i] - initial_state.0[*i]).min().unwrap();
+            for times in 0..(max_presses + 1) {
                 let mut new_state = initial_state.clone();
-                remaining_buttons[0].push(&mut new_state, times);
-                if !new_state.is_valid(goal) {
-                    continue;
-                }
+                remaining_buttons[0].push(&mut new_state, times); // will always be valid because checked max_presses first
                 // then generate combinations for remaining buttons & presses
                 for option in Self::combinations_of_button_presses(&new_state, &remaining_buttons[1..], remaining_presses - times, goal) {
                     v.push(option);
