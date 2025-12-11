@@ -97,8 +97,35 @@ impl JoltageState {
     }
 
     pub fn successors(&self, all_buttons: &Vec<Button>, goal: &Self) -> Vec<(Self, u32)> {
+        // calculate remaining diff
         let remaining = self.remaining_to_goal(goal);
-        let (_index, available_buttons) = self.find_fewest_available_buttons(all_buttons, goal);
+
+        // find any indices which are already finished
+        let mut finished_indices = Vec::new();
+        let mut unfinished_indices = Vec::new();
+        for i in 0..remaining.len() {
+            if remaining[i] == 0 {
+                finished_indices.push(i);
+            } else {
+                unfinished_indices.push(i);
+            }
+        }
+        
+        // find the unfinished index with the least available buttons to press
+        let mut min: Option<(usize, Vec<&Button>)> = None;
+        for i in unfinished_indices {
+            let available_buttons: Vec<_> = all_buttons.iter().filter(|b| b.indices.contains(&i) && !finished_indices.iter().any(|f| b.indices.contains(f))).collect();
+            if let Some((_min_r, min_b)) = &min {
+                if available_buttons.len() < min_b.len() {
+                    min = Some((i, available_buttons));
+                }
+            } else {
+                min = Some((i, available_buttons));
+            }
+        }
+        let (_index, available_buttons) = min.unwrap();
+        
+        // enumerate options for pressing the available buttons
         let mut v = Vec::new();
         for button in available_buttons {
             let max_presses = button.indices.iter().map(|i| remaining[*i]).min().unwrap();
@@ -111,23 +138,5 @@ impl JoltageState {
             }
         }
         v
-    }
-
-    fn find_fewest_available_buttons<'a>(&self, buttons: &'a Vec<Button>, goal: &Self) -> (usize, Vec<&'a Button>) {
-        let mut min: Option<(usize, Vec<&Button>)>  = None;
-        for i in 0..self.0.len() {
-            if self.0[i] == goal.0[i] {
-                continue; // already finished
-            }
-            let available_buttons: Vec<_> = buttons.iter().filter(|b| b.indices.contains(&i)).collect();
-            if let Some((_min_r, min_b)) = &min {
-                if available_buttons.len() < min_b.len() {
-                    min = Some((i, available_buttons));
-                }
-            } else {
-                min = Some((i, available_buttons));
-            }
-        }
-        min.unwrap()
     }
 }
