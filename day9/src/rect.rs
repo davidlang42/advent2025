@@ -3,8 +3,8 @@ use std::{fmt::Display, ops::Range};
 use crate::pos::Pos;
 
 pub struct Rect {
-    min: Pos,
-    max: Pos,
+    pub min: Pos,
+    pub max: Pos,
     size: usize
 }
 
@@ -47,7 +47,7 @@ impl Rect {
         Rect::new(min, max)
     }
 
-    fn new(min: Pos, max: Pos) -> Self {
+    pub fn new(min: Pos, max: Pos) -> Self {
         Self {
             min,
             max,
@@ -69,6 +69,13 @@ impl Rect {
 
     pub fn max_y(&self) -> usize {
         self.max.y
+    }
+
+    pub fn centre(&self) -> Pos {
+        Pos {
+            x: (self.min.x + self.max.x) / 2,
+            y: (self.min.y + self.max.y) / 2
+        }
     }
 
     pub fn contains(&self, p: &Pos) -> bool {

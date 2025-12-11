@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt::Display;
 use std::str::FromStr;
 use crate::pos::Pos;
@@ -7,7 +8,9 @@ use crate::line::Line;
 pub struct Shape {
     corners: Vec<Pos>,
     edges: Vec<Line>,
-    bounds: Rect
+    bounds: Rect,
+    unique_x: Vec<usize>,
+    unique_y: Vec<usize>
 }
 
 impl FromStr for Shape {
@@ -40,16 +43,32 @@ impl Display for Shape {
 
 impl Shape {
     pub fn new(corners: Vec<Pos>) -> Self {
+        // find bounds
         let bounds = Rect::containing(&corners);
+        // make edges
         let mut edges = Vec::new();
         for i in 0..(corners.len() - 1) {
             edges.push(Line::between(corners[i], corners[i+1]));
         }
         edges.push(Line::between(corners[corners.len() - 1], corners[0]));
+        // find uniques
+        let mut x_set = HashSet::new();
+        let mut y_set = HashSet::new();
+        for p in &corners {
+            x_set.insert(p.x);
+            y_set.insert(p.y);
+        }
+        let mut unique_x: Vec<usize> = x_set.into_iter().collect();
+        unique_x.sort();
+        let mut unique_y: Vec<usize> = y_set.into_iter().collect();
+        unique_y.sort();
+        // return
         Self {
             corners,
             edges,
-            bounds
+            bounds,
+            unique_x,
+            unique_y
         }
     }
 
@@ -87,26 +106,28 @@ impl Shape {
 
     pub fn encapsulates(&self, r: &Rect) -> bool {
         //print!("Checking {}: ", r);
-        for x in r.x_range() {
-            // let low_end = Pos { x, y: r.low.y };
-            // if !self.is_inside_tile_shape(&low_end) {
-            //     //println!("INVALID at {}", p);
-            //     return false;
-            // }
-            // let high_end = Pos { x, y: r.high.y };
-            // let y_from = r.low.y + 1;
-            // let y_to = r.high.y - 1;
-            // if self.count_edge_crossings(x, self.tiles.contains(&low_end), y_from, y_to, self.tiles.contains(&high_end)) > 0 {
-            //     //println!("INVALID at {}", p);
-            //     return false;
-            // }
-            for y in r.y_range() {
-                if !self.contains(&Pos { x, y }) {
+        let x_values = scanline_range(&self.unique_x, r.min.x, r.max.x);
+        let y_values = scanline_range(&self.unique_y, r.min.y, r.max.y);
+        for x in 1..x_values.len() {
+            for y in 1..y_values.len() {
+                let r = Rect::new(Pos {
+                    x: x_values[x-1],
+                    y: y_values[y-1]
+                }, Pos {
+                    x: x_values[x],
+                    y: y_values[y]
+                });
+                if !self.contains(&r.centre()) {
                     return false;
                 }
             }
         }
-        //println!("VALID");
         true
     }
+}
+
+fn scanline_range<'a>(unique: &'a Vec<usize>, from: usize, to: usize) -> &'a [usize] {
+    let f = unique.iter().position(|u| *u == from).unwrap();
+    let t = unique.iter().position(|u| *u == to).unwrap();
+    &unique[f..(t+1)]
 }
