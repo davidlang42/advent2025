@@ -2,7 +2,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 use crate::pos::Pos;
 use crate::rect::Rect;
-use crate::line::{self, Line};
+use crate::line::Line;
 
 pub struct Shape {
     corners: Vec<Pos>,

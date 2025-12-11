@@ -11,7 +11,7 @@ struct Pos {
 
 struct Map {
     rolls: HashSet<Pos>,
-    size: Pos
+    _size: Pos
 }
 
 impl FromStr for Map {
@@ -33,7 +33,7 @@ impl FromStr for Map {
         }
         Ok(Self {
             rolls,
-            size: Pos { x, y }
+            _size: Pos { x, y }
         })
     }
 }
@@ -80,7 +80,7 @@ fn main() {
             .expect(&format!("Error reading from {}", filename));
         let mut map: Map = text.parse().unwrap();
         let mut removed = 0;
-        while true {
+        loop {
             let moveable = map.moveable_rolls();
             if moveable.len() == 0 {
                 break;

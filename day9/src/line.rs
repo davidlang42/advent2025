@@ -37,7 +37,7 @@ impl Line {
         Self { same:Same::X(x), from: y_from, to: y_to }
     }
 
-    pub fn same_y(y: usize, x_from: usize, x_to: usize) -> Self {
+    pub fn _same_y(y: usize, x_from: usize, x_to: usize) -> Self {
         Self { same:Same::Y(y), from: x_from, to: x_to }
     }
 
