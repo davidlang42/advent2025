@@ -85,21 +85,24 @@ impl LightState {
 
 impl JoltageState {
     pub fn min_cost_to_goal(&self, goal: &Self) -> u32 {
-        let mut max_diff = 0;
+        self.remaining_to_goal(goal).into_iter().max().unwrap() as u32
+    }
+
+    fn remaining_to_goal(&self, goal: &Self) -> Vec<usize> {
+        let mut v = Vec::new();
         for i in 0..self.0.len() {
-            let diff = self.0[i].abs_diff(goal.0[i]);
-            if diff > max_diff {
-                max_diff = diff;
-            }
+            v.push(self.0[i].abs_diff(goal.0[i]));
         }
-        max_diff as u32
+        v
     }
 
     pub fn successors(&self, all_buttons: &Vec<Button>, goal: &Self) -> Vec<(Self, u32)> {
-        let (remaining_presses, available_buttons) = self.find_fewest_available_buttons(all_buttons, goal);
+        let remaining = self.remaining_to_goal(goal);
+        let (_index, available_buttons) = self.find_fewest_available_buttons(all_buttons, goal);
         let mut v = Vec::new();
         for button in available_buttons {
-            for times in 0..(remaining_presses + 1) {
+            let max_presses = button.indices.iter().map(|i| remaining[*i]).min().unwrap();
+            for times in 0..(max_presses + 1) {
                 let mut new_state = self.clone();
                 button.push(&mut new_state, times);
                 if new_state.is_valid(goal) {
@@ -116,14 +119,13 @@ impl JoltageState {
             if self.0[i] == goal.0[i] {
                 continue; // already finished
             }
-            let remaining = goal.0[i] - self.0[i];
-            let available_buttons: Vec<_> = buttons.iter().filter(|b| b.affects(i)).collect();
+            let available_buttons: Vec<_> = buttons.iter().filter(|b| b.indices.contains(&i)).collect();
             if let Some((_min_r, min_b)) = &min {
                 if available_buttons.len() < min_b.len() {
-                    min = Some((remaining, available_buttons));
+                    min = Some((i, available_buttons));
                 }
             } else {
-                min = Some((remaining, available_buttons));
+                min = Some((i, available_buttons));
             }
         }
         min.unwrap()

@@ -3,7 +3,7 @@ use crate::states::State;
 
 #[derive(Debug)]
 pub struct Button {
-    indices: Vec<usize>
+    pub indices: Vec<usize>
 }
 
 impl FromStr for Button {
@@ -23,9 +23,5 @@ impl Button {
                 state.poke(*index);
             }
         }
-    }
-
-    pub fn affects(&self, index: usize) -> bool {
-        self.indices.contains(&index)
     }
 }
