@@ -120,6 +120,7 @@ impl JoltageState {
                 if !new_state.is_valid(goal) {
                     continue;
                 }
+                // then generate combinations for remaining buttons & presses
                 for option in Self::combinations_of_button_presses(&new_state, &remaining_buttons[1..], remaining_presses - times, goal) {
                     v.push(option);
                 }
