@@ -95,15 +95,55 @@ impl JoltageState {
         max_diff as u32
     }
 
-    pub fn successors(&self, buttons: &Vec<Button>, goal: &Self) -> Vec<(Self, u32)> {
+    pub fn successors(&self, all_buttons: &Vec<Button>, goal: &Self) -> Vec<(Self, u32)> {
+        let (_index, remaining, buttons) = self.find_fewest_available_buttons(all_buttons, goal);
         let mut v = Vec::new();
-        for i in 0..buttons.len() {
-            let mut new_state = self.clone();
-            buttons[i].push(&mut new_state, 1);
+        for option in Self::combinations_of_button_presses(self, &buttons, remaining, goal) {
+            v.push((option, remaining as u32));
+        }
+        v
+    }
+
+    fn combinations_of_button_presses(initial_state: &Self, remaining_buttons: &[&Button], remaining_presses: usize, goal: &JoltageState) -> Vec<Self> {
+        let mut v = Vec::new();
+        if remaining_buttons.len() == 1 {
+            let mut new_state = initial_state.clone();
+            remaining_buttons[0].push(&mut new_state, remaining_presses); // only 1 button left, press it the remaining times
             if new_state.is_valid(goal) {
-                v.push((new_state, 1));
+                v.push(new_state);
+            }
+        } else {
+            // try the first button any number of times
+            for times in 0..(remaining_presses + 1) {
+                let mut new_state = initial_state.clone();
+                remaining_buttons[0].push(&mut new_state, times);
+                if !new_state.is_valid(goal) {
+                    continue;
+                }
+                for option in Self::combinations_of_button_presses(&new_state, &remaining_buttons[1..], remaining_presses - times, goal) {
+                    v.push(option);
+                }
             }
         }
         v
+    }
+
+    fn find_fewest_available_buttons<'a>(&self, buttons: &'a Vec<Button>, goal: &Self) -> (usize, usize, Vec<&'a Button>) {
+        let mut min: Option<(usize, usize, Vec<&Button>)>  = None;
+        for i in 0..self.0.len() {
+            if self.0[i] == goal.0[i] {
+                continue; // already finished
+            }
+            let remaining = goal.0[i] - self.0[i];
+            let available_buttons: Vec<_> = buttons.iter().filter(|b| b.affects(i)).collect();
+            if let Some((_min_i, _min_r, min_b)) = &min {
+                if available_buttons.len() < min_b.len() {
+                    min = Some((i, remaining, available_buttons));
+                }
+            } else {
+                min = Some((i, remaining, available_buttons));
+            }
+        }
+        min.unwrap()
     }
 }

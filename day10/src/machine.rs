@@ -47,12 +47,12 @@ impl Machine {
         result.unwrap().len() - 1
     }
 
-    pub fn minimum_presses_to_joltages(&self) -> usize {
+    pub fn minimum_presses_to_joltages(&self) -> u32 {
         let start = JoltageState::new(&self.joltages);
         let result = astar(&start,
             |state| state.successors(&self.buttons, &self.joltages),
             |state| state.min_cost_to_goal(&self.joltages),
             |state| *state == self.joltages);
-        result.unwrap().0.len() - 1
+        result.unwrap().1
     }
 }

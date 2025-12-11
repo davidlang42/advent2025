@@ -24,4 +24,8 @@ impl Button {
             }
         }
     }
+
+    pub fn affects(&self, index: usize) -> bool {
+        self.indices.contains(&index)
+    }
 }
