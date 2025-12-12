@@ -119,9 +119,14 @@ impl Region {
     }
 
     fn apply(&self, shape: &Shape, row: usize, col: usize) -> Option<Self> {
+        // check it wont overlap, but will touch
+        let mut touching = row == 0 || col == 0;
         for r in 0..3 {
             for c in 0..3 {
                 if shape.rows[r][c] {
+                    if !touching && (self.rows[row][col - 1] || self.rows[row - 1][col]) {
+                        touching = true;
+                    }
                     if row + r >= self.rows.len() || col + c >= self.rows[row + r].len() {
                         return None; // new shape would be out of bounds
                     }
@@ -131,6 +136,10 @@ impl Region {
                 }
             }
         }
+        if !touching {
+            return None; // this would leave unneceessary gaps and waste space
+        }
+        // now clone and apply it
         let mut new_region = self.clone();
         for r in 0..3 {
             for c in 0..3 {
