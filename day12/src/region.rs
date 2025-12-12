@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use crate::shape::ShapeSet;
 use crate::shape::Shape;
-use pathfinding::prelude::bfs;
+use pathfinding::prelude::dfs;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Region {
@@ -42,7 +42,7 @@ impl Region {
         if self.is_impossible_by_area(shapes) {
             return false;
         }
-        let result = bfs(self, |r| r.successors(shapes), |r| r.is_complete());
+        let result = dfs(self.clone(), |r| r.successors(shapes), |r| r.is_complete());
         result.is_some()
     }
 
