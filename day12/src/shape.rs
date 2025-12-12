@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Shape {
-    rows: [[bool; 3]; 3]
+    pub rows: [[bool; 3]; 3]
 }
 
 impl FromStr for Shape {
@@ -20,5 +20,68 @@ impl FromStr for Shape {
             rows.push(row);
         }
         Ok(Self { rows: rows.try_into().unwrap() })
+    }
+}
+
+impl Shape {
+    fn rotate_90(&self) -> Self {
+        let x = self.rows;
+        Self {
+            rows: [
+                [x[2][0], x[1][0], x[0][0]],
+                [x[2][1], x[1][1], x[0][1]],
+                [x[2][2], x[1][2], x[0][2]],
+            ]
+        }
+    }
+
+    fn rotate_180(&self) -> Self {
+        self.rotate_90().rotate_90()
+    }
+
+    fn rotate_270(&self) -> Self {
+        self.rotate_90().rotate_90().rotate_90()
+    }
+
+    fn flip_horizontal(&self) -> Self {
+        let x = self.rows;
+        Self {
+            rows: [
+                x[2],
+                x[1],
+                x[0],
+            ]
+        }
+    }
+
+    fn flip_vertical(&self) -> Self {
+        let x = self.rows;
+        Self {
+            rows: [
+                [x[0][2], x[1][1], x[0][0]],
+                [x[1][2], x[1][1], x[1][0]],
+                [x[2][2], x[2][1], x[2][0]],
+            ]
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ShapeSet {
+    pub shapes: [Shape; 6]
+}
+
+impl ShapeSet {
+    pub fn new(shape: Shape) -> Self {
+        Self {
+            shapes: [
+                shape.rotate_90(),
+                shape.rotate_180(),
+                shape.rotate_270(),
+                shape.flip_horizontal(),
+                shape.flip_vertical(),
+                shape
+            ]
+        }
     }
 }

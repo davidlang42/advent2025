@@ -1,6 +1,9 @@
 use std::str::FromStr;
+use crate::shape::ShapeSet;
 use crate::shape::Shape;
+use pathfinding::prelude::bfs;
 
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Region {
     rows: Vec<Vec<bool>>,
     contains_shapes: [usize; 6],
@@ -35,7 +38,68 @@ impl Region {
         }
     }
 
-    pub fn fill_shapes(&mut self, shapes: &[Shape; 6]) -> bool {
-        todo!()
+    pub fn can_fit(&self, shapes: &[ShapeSet; 6]) -> bool {
+        let result = bfs(self, |r| r.successors(shapes), |r| r.is_complete());
+        result.is_some()
+    }
+
+    fn is_complete(&self) -> bool {
+        for i in 0..self.contains_shapes.len() {
+            if self.contains_shapes[i] != self.required_shapes[i] {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn first_required_shape(&self) -> usize {
+        for i in 0..self.contains_shapes.len() {
+            if self.contains_shapes[i] != self.required_shapes[i] {
+                return i;
+            }
+        }
+        panic!()
+    }
+
+    fn successors(&self, shapes: &[ShapeSet; 6]) -> Vec<Self> {
+        let shape_i = self.first_required_shape();
+        let shape = &shapes[shape_i];
+        let mut v = Vec::new();
+        for r in 0..self.rows.len() {
+            let row = &self.rows[r];
+            for c in 0..row.len() {
+                for s in &shape.shapes {
+                    if let Some(mut new_region) = self.apply(s, r, c) {
+                        new_region.contains_shapes[shape_i] += 1;
+                        v.push(new_region)
+                    }
+                }
+            }
+        }
+        v
+    }
+
+    fn apply(&self, shape: &Shape, row: usize, col: usize) -> Option<Self> {
+        for r in 0..3 {
+            for c in 0..3 {
+                if shape.rows[r][c] {
+                    if row + r >= self.rows.len() || col + c >= self.rows[row + r].len() {
+                        return None; // new shape would be out of bounds
+                    }
+                    if self.rows[row + r][col + c] {
+                        return None; // new shape would overlap existing
+                    }
+                }
+            }
+        }
+        let mut new_region = self.clone();
+        for r in 0..3 {
+            for c in 0..3 {
+                if shape.rows[r][c] {
+                    new_region.rows[r][c] = true;
+                }
+            }
+        }
+        Some(new_region)
     }
 }

@@ -1,9 +1,9 @@
 use std::str::FromStr;
 use crate::region::Region;
-use crate::shape::Shape;
+use crate::shape::ShapeSet;
 
 pub struct Puzzle {
-    shapes: [Shape; 6],
+    shapes: [ShapeSet; 6],
     regions: Vec<Region>
 }
 
@@ -14,7 +14,7 @@ impl FromStr for Puzzle {
         let sections: Vec<&str> = text.split("\r\n\r\n").collect();
         let mut shapes = Vec::new();
         for i in 0..6 {
-            shapes.push(sections[i].parse().unwrap());
+            shapes.push(ShapeSet::new(sections[i].parse().unwrap()));
         }
         let regions = sections[shapes.len()].lines().map(|line| line.parse().unwrap()).collect();
         Ok(Self {
@@ -25,10 +25,10 @@ impl FromStr for Puzzle {
 }
 
 impl Puzzle {
-    pub fn count_successful_regions(&mut self) -> usize {
+    pub fn count_successful_regions(&self) -> usize {
         let mut count = 0;
-        for r in &mut self.regions {
-            if r.fill_shapes(&self.shapes) {
+        for r in &self.regions {
+            if r.can_fit(&self.shapes) {
                 count += 1;
             }
         }
