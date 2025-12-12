@@ -65,9 +65,12 @@ impl Region {
         let shape_i = self.first_required_shape();
         let shape = &shapes[shape_i];
         let mut v = Vec::new();
-        for r in 0..self.rows.len() {
+        for r in 0..(self.rows.len() - 2) {
             let row = &self.rows[r];
-            for c in 0..row.len() {
+            for c in 0..(row.len() - 2) {
+                if row[c] {
+                    continue; // dont try to start a shape on an existing one
+                }
                 for s in &shape.shapes {
                     if let Some(mut new_region) = self.apply(s, r, c) {
                         new_region.contains_shapes[shape_i] += 1;
