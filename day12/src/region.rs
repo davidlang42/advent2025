@@ -74,10 +74,6 @@ impl Region {
     }
 
     fn successors(&self, shapes: &[ShapeSet; 6]) -> Vec<Self> {
-        let required = self.requires_linear_len(shapes);
-        if !self.has_linear_len(required) {
-            return Vec::new();
-        }
         let shape_i = self.first_required_shape();
         let shape = &shapes[shape_i];
         let mut v = Vec::new();
@@ -96,33 +92,6 @@ impl Region {
             }
         }
         v
-    }
-
-    fn has_linear_len(&self, linear_len: usize) -> bool {
-        for r in 0..(self.rows.len() - linear_len + 1) {
-            for c in 0..(self.rows[r].len() - linear_len + 1) {
-                if (c..(c + linear_len)).map(|x| self.rows[r][x]).all(|b| !b) {
-                    return true; // available row
-                }
-                if (r..(r + linear_len)).map(|x| self.rows[x][c]).all(|b| !b) {
-                    return true; // available col
-                }
-            }
-        }
-        false
-    }
-
-    fn requires_linear_len(&self, shapes: &[ShapeSet; 6]) -> usize {
-        let mut max = 0;
-        for i in 0..self.contains_shapes.len() {
-            if self.contains_shapes[i] != self.required_shapes[i] {
-                let len = shapes[i].linear_len();
-                if len > max {
-                    max = len;
-                }
-            }
-        }
-        max
     }
 
     fn apply(&self, shape: &Shape, row: usize, col: usize) -> Option<Self> {
