@@ -27,9 +27,13 @@ impl FromStr for Puzzle {
 impl Puzzle {
     pub fn count_successful_regions(&self) -> usize {
         let mut count = 0;
-        for r in &self.regions {
-            if r.can_fit(&self.shapes) {
+        for r in 0..self.regions.len() {
+            print!("Region {}: ", r);
+            if self.regions[r].can_fit(&self.shapes) {
                 count += 1;
+                println!("fits");
+            } else {
+                println!("cannot fit");
             }
         }
         count
