@@ -64,34 +64,58 @@ impl Region {
         requires > available
     }
 
-    fn first_required_shape(&self) -> usize {
-        for i in 0..self.contains_shapes.len() {
-            if self.contains_shapes[i] != self.required_shapes[i] {
-                return i;
-            }
-        }
-        panic!()
-    }
-
     fn successors(&self, shapes: &[ShapeSet; 6]) -> Vec<Self> {
-        let shape_i = self.first_required_shape();
-        let shape = &shapes[shape_i];
         let mut v = Vec::new();
-        for r in 0..(self.rows.len() - 2) {
-            let row = &self.rows[r];
-            for c in 0..(row.len() - 2) {
-                if row[c] {
-                    continue; // dont try to start a shape on an existing one
-                }
-                for s in &shape.shapes {
-                    if let Some(mut new_region) = self.apply(s, r, c) {
-                        new_region.contains_shapes[shape_i] += 1;
-                        v.push(new_region)
+        // an empty row/col is the last row/col we should be willing to add a shape to,
+        // because leaving a full empty row/col is automatically a waste of space
+        let mut last_row = self.first_empty_row().unwrap_or(self.rows.len());
+        let mut last_col = self.first_empty_col().unwrap_or(self.rows[0].len());
+        if last_row > self.rows.len() - 3 {
+            last_row = self.rows.len() - 3;
+        }
+        if last_col > self.rows[0].len() - 3 {
+            last_col = self.rows[0].len() - 3;
+        }
+        // need to try all the shapes, because order of adding them could matter
+        for s in 0..shapes.len() {
+            if self.contains_shapes[s] == self.required_shapes[s] {
+                continue; // already have enough of this shape
+            }
+            for r in 0..(last_row + 1) {
+                let row = &self.rows[r];
+                for c in 0..(last_col + 1) {
+                    if row[c] {
+                        continue; // dont try to start a shape on an existing one
+                    }
+                    // try this shape in any orientation
+                    for orientation in &shapes[s].shapes {
+                        if let Some(mut new_region) = self.apply(orientation, r, c) {
+                            new_region.contains_shapes[s] += 1;
+                            v.push(new_region)
+                        }
                     }
                 }
             }
         }
         v
+    }
+
+    fn first_empty_row(&self) -> Option<usize> {
+        for r in 0..self.rows.len() {
+            if self.rows[r].iter().all(|v| !v) {
+                return Some(r);
+            }
+        }
+        None
+    }
+
+    fn first_empty_col(&self) -> Option<usize> {
+        for c in 0..self.rows[0].len() {
+            if (0..self.rows.len()).all(|r| !self.rows[r][c]) {
+                return Some(c);
+            }
+        }
+        None
     }
 
     fn apply(&self, shape: &Shape, row: usize, col: usize) -> Option<Self> {
