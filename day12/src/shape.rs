@@ -65,16 +65,16 @@ impl Shape {
         }
     }
 
-    fn size(&self) -> usize {
-        let mut size = 0;
+    fn area(&self) -> usize {
+        let mut area = 0;
         for r in &self.rows {
             for c in r {
                 if *c {
-                    size += 1;
+                    area += 1;
                 }
             }
         }
-        size
+        area
     }
 }
 
@@ -97,7 +97,7 @@ impl ShapeSet {
         }
     }
 
-    pub fn size(&self) -> usize {
-        self.shapes[0].size()
+    pub fn area(&self) -> usize {
+        self.shapes[0].area()
     }
 }

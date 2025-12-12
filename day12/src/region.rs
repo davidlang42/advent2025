@@ -39,7 +39,7 @@ impl Region {
     }
 
     pub fn can_fit(&self, shapes: &[ShapeSet; 6]) -> bool {
-        if self.is_impossible(shapes) {
+        if self.is_impossible_by_area(shapes) {
             return false;
         }
         let result = bfs(self, |r| r.successors(shapes), |r| r.is_complete());
@@ -55,10 +55,10 @@ impl Region {
         true
     }
 
-    fn is_impossible(&self, shapes: &[ShapeSet; 6]) -> bool {
+    fn is_impossible_by_area(&self, shapes: &[ShapeSet; 6]) -> bool {
         let mut requires = 0;
         for i in 0..self.contains_shapes.len() {
-            requires += self.required_shapes[i] * shapes[i].size();
+            requires += self.required_shapes[i] * shapes[i].area();
         }
         let available = self.rows.len() * self.rows[0].len();
         requires > available
