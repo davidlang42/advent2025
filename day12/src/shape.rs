@@ -64,6 +64,18 @@ impl Shape {
             ]
         }
     }
+
+    fn size(&self) -> usize {
+        let mut size = 0;
+        for r in &self.rows {
+            for c in r {
+                if *c {
+                    size += 1;
+                }
+            }
+        }
+        size
+    }
 }
 
 #[derive(Debug)]
@@ -83,5 +95,9 @@ impl ShapeSet {
                 shape
             ]
         }
+    }
+
+    pub fn size(&self) -> usize {
+        self.shapes[0].size()
     }
 }
