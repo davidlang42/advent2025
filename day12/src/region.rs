@@ -96,7 +96,7 @@ impl Region {
         for r in 0..3 {
             for c in 0..3 {
                 if shape.rows[r][c] {
-                    new_region.rows[r][c] = true;
+                    new_region.rows[row + r][col + c] = true;
                 }
             }
         }
