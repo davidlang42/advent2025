@@ -76,6 +76,26 @@ impl Shape {
         }
         area
     }
+
+    fn linear_row_len(&self) -> usize {
+        let mut max = 0;
+        for row in self.rows {
+            let len = Self::row_len(row);
+            if len > max {
+                max = len;
+            }
+        }
+        max
+    }
+
+    fn row_len(row: [bool; 3]) -> usize {
+        match row {
+            [true, true, true] => 3,
+            [true, true, false] => 2,
+            [false, true, true] => 2,
+            _ => 1 // we don't have shapes with empty rows
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -99,5 +119,16 @@ impl ShapeSet {
 
     pub fn area(&self) -> usize {
         self.shapes[0].area()
+    }
+
+    pub fn linear_len(&self) -> usize {
+        let mut max = 0;
+        for s in &self.shapes {
+            let len = s.linear_row_len();
+            if len > max {
+                max = len;
+            }
+        }
+        max
     }
 }
